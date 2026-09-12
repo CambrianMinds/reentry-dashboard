@@ -1,0 +1,21 @@
+{
+  "name": "indiana-reentry-dashboard",
+  "version": "1.0.0",
+  "description": "Private, zero-knowledge in-browser dashboard and timeline tracker for Indiana criminal record expungement and re-entry (IC § 35-38-9).",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "indiana",
+    "expungement",
+    "re-entry",
+    "second-chance",
+    "indexeddb",
+    "pro-se"
+  ],
+  "author": "",
+  "license": "MIT"
+}

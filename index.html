@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Private, zero-knowledge in-browser vault and statutory deadline companion for Indiana expungement and criminal record re-entry (IC § 35-38-9).">
+  <title>Indiana Re-Entry Vault — Private Expungement & Deadlines Companion</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">IN</div>
+        <div class="brand-text">
+          <h1>Indiana Re-Entry Vault <span class="badge-privacy">100% In-Browser</span></h1>
+          <div class="brand-subtitle">Private Record Management & Statutory Deadlines (IC § 35-38-9)</div>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-target="cases" role="tab" aria-selected="true">
+          <span>📁</span> Cases & Vault
+        </button>
+        <button class="nav-tab" data-target="calendar" role="tab" aria-selected="false">
+          <span>📅</span> Timeline & Deadlines
+        </button>
+        <button class="nav-tab" data-target="documents" role="tab" aria-selected="false">
+          <span>📄</span> Documents
+        </button>
+        <button class="nav-tab" data-target="resources" role="tab" aria-selected="false">
+          <span>🏛️</span> County Directory
+        </button>
+        <button class="nav-tab" data-target="settings" role="tab" aria-selected="false">
+          <span>⚙️</span> Privacy & Settings
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button id="btn-theme-toggle" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button id="btn-header-add" class="btn btn-primary btn-sm">
+          <span>+</span> Add Case
+        </button>
+        <button id="btn-header-export" class="btn btn-secondary btn-sm" title="Download encrypted or plain JSON backup">
+          <span>💾</span> Backup
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+
+    <!-- ───────────────────────── TAB 1: CASES & VAULT ───────────────────────── -->
+    <section id="view-cases" class="view-panel active">
+      <!-- Statutory Awareness Alert -->
+      <div id="multi-county-banner" class="alert-banner alert-warning" style="display: none;">
+        <span>⚠️</span>
+        <div>
+          <strong>365-Day Multi-County Expungement Clock Active</strong>
+          <p id="multi-county-banner-text">Under IC § 35-38-9-9(h), because you have convictions across multiple Indiana counties, all petitions must be filed within 365 days of your first petition.</p>
+        </div>
+      </div>
+
+      <!-- Controls & Filter Bar -->
+      <div class="vault-topbar">
+        <div class="search-filter-group">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="case-search" class="search-input" placeholder="Search by cause number, county, or court...">
+          </div>
+          <select id="case-filter-status" class="filter-select">
+            <option value="all">All Statuses</option>
+            <option value="imported">Imported / In Review</option>
+            <option value="petitioned">Petitioned (Court Pending)</option>
+            <option value="granted">Granted (Needs Service)</option>
+            <option value="denied">Denied</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+        <div>
+          <button id="btn-import-vault-modal" class="btn btn-secondary">
+            <span>📥</span> Import Data
+          </button>
+          <button id="btn-add-case-main" class="btn btn-primary">
+            <span>+</span> Add New Case
+          </button>
+        </div>
+      </div>
+
+      <!-- Cases Grid Container -->
+      <div id="cases-grid" class="cases-grid">
+        <!-- Rendered dynamically by ui.js -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="cases-empty" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">⚖️</div>
+        <h3>Your Re-Entry Vault is Empty</h3>
+        <p>No criminal cases or court records are currently tracked in this browser. Add your first case manually or import a JSON export from The Expunger.</p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center;">
+          <button class="btn btn-primary" onclick="document.getElementById('btn-add-case-main').click()">+ Add Case Manually</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('btn-import-vault-modal').click()">📥 Import Expunger JSON</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TAB 2: TIMELINE & CALENDAR ───────────────────────── -->
+    <section id="view-calendar" class="view-panel">
+      <div class="calendar-layout">
+        <!-- Calendar Grid -->
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <h2 id="calendar-month-year" class="calendar-month-title">Month Year</h2>
+              <button id="cal-prev" class="btn-icon btn-sm">‹</button>
+              <button id="cal-today" class="btn btn-secondary btn-sm">Today</button>
+              <button id="cal-next" class="btn-icon btn-sm">›</button>
+            </div>
+            <div>
+              <button id="btn-export-ics" class="btn btn-primary btn-sm" title="Download .ics file to add to Google/Apple Calendar">
+                <span>📅</span> Export to Calendar (.ics)
+              </button>
+            </div>
+          </div>
+
+          <div class="calendar-grid" id="calendar-grid">
+            <div class="calendar-day-header">Sun</div>
+            <div class="calendar-day-header">Mon</div>
+            <div class="calendar-day-header">Tue</div>
+            <div class="calendar-day-header">Wed</div>
+            <div class="calendar-day-header">Thu</div>
+            <div class="calendar-day-header">Fri</div>
+            <div class="calendar-day-header">Sat</div>
+            <!-- Days rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Agenda Feed Sidebar -->
+        <aside class="agenda-sidebar">
+          <div class="agenda-title">
+            <span>Upcoming Milestones</span>
+            <span id="agenda-count" class="badge-privacy">0</span>
+          </div>
+          <div id="agenda-list" class="agenda-list">
+            <!-- Agenda items rendered dynamically -->
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TAB 3: DOCUMENTS VAULT ───────────────────────── -->
+    <section id="view-documents" class="view-panel">
+      <div class="vault-topbar">
+        <div>
+          <h2>Document Repository</h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">Stored securely in your local browser IndexedDB. No upload to any remote server.</p>
+        </div>
+        <div>
+          <button id="btn-upload-doc-modal" class="btn btn-primary">
+            <span>📤</span> Upload Document
+          </button>
+        </div>
+      </div>
+
+      <div id="documents-grid" class="cases-grid" style="margin-top: 1rem;">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div id="documents-empty" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📄</div>
+        <h3>No Documents Stored</h3>
+        <p>Save your generated expungement petitions, signed court orders, or ISP background check reports here for offline access.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('btn-upload-doc-modal').click()">Upload First Document</button>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TAB 4: COUNTY DIRECTORY & RESOURCES ───────────────────────── -->
+    <section id="view-resources" class="view-panel">
+      <div class="vault-topbar">
+        <div>
+          <h2>Indiana 92-County Court & Service Directory</h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">Verified statutory service addresses for Clerks, Prosecuting Attorneys, and Sheriffs under IC § 35-38-9.</p>
+        </div>
+      </div>
+
+      <div class="county-selector-bar">
+        <label for="county-select" class="form-label">Select Indiana County:</label>
+        <select id="county-select" class="form-control">
+          <!-- Populated from county-directory.js -->
+        </select>
+      </div>
+
+      <div id="county-info-container" class="county-card-details">
+        <!-- Office cards rendered dynamically -->
+      </div>
+
+      <!-- Statewide Repositories -->
+      <div style="margin-top: 2.5rem;">
+        <h3 style="font-family: var(--font-serif); margin-bottom: 1rem;">Statewide Repositories (Mandatory Service)</h3>
+        <div class="county-card-details" id="statewide-agencies-container">
+          <!-- ISP & BMV cards -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TAB 5: SETTINGS & PRIVACY ───────────────────────── -->
+    <section id="view-settings" class="view-panel">
+      <div class="settings-section">
+        <h3>🔒 Absolute Privacy Guarantee</h3>
+        <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">
+          This application operates completely offline and client-side. Every record, cause number, and document is stored strictly inside your browser's sandboxed <code>IndexedDB</code> storage.
+        </p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <span class="badge-privacy">✓ Zero Analytics</span>
+          <span class="badge-privacy">✓ Zero Cloud Storage</span>
+          <span class="badge-privacy">✓ Zero Network Transmission</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>📊 Local Browser Storage</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted);">Monitor how much client storage your vault and stored PDF documents are consuming.</p>
+        <div class="storage-meter">
+          <div id="storage-meter-bar" class="storage-meter-fill"></div>
+        </div>
+        <div id="storage-stats-text" style="font-size: 0.85rem; font-weight: 600;">Calculating storage usage...</div>
+      </div>
+
+      <div class="settings-section">
+        <h3>💾 Backup & Portability</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+          Since your data lives only in this browser, we recommend downloading an encrypted or plain JSON backup regularly.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button id="btn-export-vault" class="btn btn-primary">
+            <span>💾</span> Export Complete Vault (JSON)
+          </button>
+          <button id="btn-import-vault" class="btn btn-secondary">
+            <span>📥</span> Restore from Backup
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section" style="border-color: rgba(198, 40, 40, 0.3);">
+        <h3 style="color: var(--color-danger);">⚠️ Reset & Wipe Data</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+          Permanently delete all stored cases, documents, deadlines, and petitioner history from this browser. This action is irreversible.
+        </p>
+        <button id="btn-wipe-vault" class="btn btn-danger">
+          <span>🗑️</span> Permanently Wipe Local Vault
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ───────────────────────── MODALS ───────────────────────── -->
+
+  <!-- Add Case Modal -->
+  <div id="modal-add-case" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Case to Vault</h3>
+        <button class="btn-icon close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-case">
+          <div class="form-group">
+            <label for="case-input-number" class="form-label">Indiana Cause Number *</label>
+            <input type="text" id="case-input-number" class="form-control" placeholder="e.g. 49D01-1805-F6-000123" required autocomplete="off">
+            <div class="form-hint">Pattern: XXDXX-YYYY-CC-NNNNNN (County, Court, Year/Month, Offense Tier)</div>
+            <div id="cause-parser-preview" class="cause-preview-badge"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="case-input-county" class="form-label">County</label>
+              <input type="text" id="case-input-county" class="form-control" placeholder="Auto-detected from cause #">
+            </div>
+            <div class="form-group">
+              <label for="case-input-tier" class="form-label">Offense Tier (IC § 35-38-9)</label>
+              <select id="case-input-tier" class="form-control">
+                <option value="1">Tier 1: Arrest / Non-Conviction (1 Year)</option>
+                <option value="2">Tier 2: Misdemeanor (5 Years)</option>
+                <option value="3">Tier 3: Class D / Level 6 Felony (8 Years)</option>
+                <option value="4">Tier 4: Major Felony (8 Years / Consent)</option>
+                <option value="5">Tier 5: Serious Bodily Injury (10 Years / Consent)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="case-input-disposition" class="form-label">Disposition / Conviction Date</label>
+              <input type="date" id="case-input-disposition" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="case-input-sentence-end" class="form-label">Sentence Completed Date</label>
+              <input type="date" id="case-input-sentence-end" class="form-control">
+              <div class="form-hint">Probation, parole, or restitution completed</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="case-input-status" class="form-label">Current Status</label>
+              <select id="case-input-status" class="form-control">
+                <option value="imported">Imported / In Review</option>
+                <option value="petitioned">Petitioned (Court Pending)</option>
+                <option value="granted">Granted (Order Received)</option>
+                <option value="denied">Denied</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="case-input-filing-date" class="form-label">Petition Filing Date (if filed)</label>
+              <input type="date" id="case-input-filing-date" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="case-input-charges" class="form-label">Charges / Offense Description</label>
+            <input type="text" id="case-input-charges" class="form-control" placeholder="e.g. Operating While Intoxicated, Theft">
+          </div>
+
+          <div class="form-group">
+            <label for="case-input-notes" class="form-label">Case Notes</label>
+            <textarea id="case-input-notes" class="form-control" rows="2" placeholder="Restitution status, prosecutor correspondence, or court notes..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Cancel</button>
+        <button type="submit" form="form-add-case" class="btn btn-primary">Save Case to Vault</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case Detail Modal -->
+  <div id="modal-case-detail" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 800px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="detail-cause-number" class="modal-title">Cause Number</h3>
+          <div id="detail-court-county" style="font-size: 0.85rem; color: var(--color-text-muted);">Court and County</div>
+        </div>
+        <button class="btn-icon close-modal">×</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button id="btn-detail-delete-case" class="btn btn-danger btn-sm" style="margin-right: auto;">Delete Case</button>
+        <button class="btn btn-secondary close-modal">Close</button>
+        <button id="btn-detail-save-changes" class="btn btn-primary">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Document Modal -->
+  <div id="modal-upload-doc" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Upload Court Document</h3>
+        <button class="btn-icon close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-upload-doc">
+          <div class="form-group">
+            <label for="doc-case-select" class="form-label">Link to Case (Optional)</label>
+            <select id="doc-case-select" class="form-control">
+              <option value="">-- General Re-Entry Document --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="doc-type-select" class="form-label">Document Type</label>
+            <select id="doc-type-select" class="form-control">
+              <option value="uploaded">Court Notice / Motion</option>
+              <option value="order">Signed Expungement Order</option>
+              <option value="isp-report">ISP Criminal History Report</option>
+              <option value="generated-packet">Expungement Petition Packet</option>
+              <option value="other">Other Document</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="doc-file-input" class="form-label">Select PDF or File *</label>
+            <input type="file" id="doc-file-input" class="form-control" accept=".pdf,image/*" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Cancel</button>
+        <button type="submit" form="form-upload-doc" class="btn btn-primary">Save to Vault</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Data Modal -->
+  <div id="modal-import-vault" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Import Data into Vault</h3>
+        <button class="btn-icon close-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Upload JSON File (Expunger Export or Vault Backup)</label>
+          <input type="file" id="import-file-input" class="form-control" accept=".json">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Or Paste JSON Data:</label>
+          <textarea id="import-json-text" class="form-control" rows="6" placeholder='{"cases": [...]} or Expunger export'></textarea>
+        </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+            <input type="checkbox" id="import-overwrite-check">
+            <span>Overwrite existing vault (otherwise merges new cases)</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Cancel</button>
+        <button id="btn-execute-import" class="btn btn-primary">Import Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Extracted Legal Engine (IIFE global) -->
+  <script src="js/lib/eligibility.js"></script>
+
+  <!-- Main Application Logic (ES Module) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
